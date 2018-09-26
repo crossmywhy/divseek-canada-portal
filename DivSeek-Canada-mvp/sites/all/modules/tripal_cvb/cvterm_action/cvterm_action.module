@@ -1,0 +1,468 @@
+<?php
+
+/**
+ * @file
+ * Module file for Tripal CV browser action field.
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.module/group/field/7.x
+ */
+
+/**
+ * Implements hook_field_info().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_info/7.x
+ */
+function cvterm_action_field_info() {
+  return array(
+    'cvterm_action' => array(
+      'label' => t('CV term action'),
+      'description' => t('This field stores action settings in the database.'),
+      'settings' => array(),
+      'instance_settings' => array(),
+      'default_widget' => 'cvterm_action_setup',
+      'default_formatter' => 'cvterm_action_overview',
+      'no_ui' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_is_empty().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_is_empty/7.x
+ */
+function cvterm_action_field_is_empty($item, $field) {
+  return empty($item['action']);
+}
+
+/**
+ * Implements hook_field_formatter_info().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_formatter_info/7.x
+ */
+function cvterm_action_field_formatter_info() {
+  return array(
+    'cvterm_action_overview' => array(
+      'label' => t('Default'),
+      'field types' => array('cvterm_action'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_formatter_view/7.x
+ */
+function cvterm_action_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+
+  switch ($display['type']) {
+    case 'cvterm_action_overview':
+      $rows = array();
+      foreach ($items as $delta => $item) {
+        $target_type = $target_id = '';
+        if (preg_match('/(\w+):(.+)/', $item['target'], $match)) {
+          $target_type = $match[1];
+          $target_id = $match[2];
+        }
+
+        $row = array(
+          $delta,
+          $item['type'],
+          $item['action'],
+          $item['title'],
+          $item['autorun'] ? t('yes') : t('no'),
+          $target_type,
+          $target_id,
+          $item['insert'],
+        );
+        $rows[] = $row;
+      }
+      $element[0] = array(
+        '#theme' => 'table',
+        '#header' => array(
+          t('Delta'),
+          t('Type'),
+          t('Action'),
+          t('Label'),
+          t('Autorun'),
+          t('Target type'),
+          t('Target identifier'),
+          t('Insertion'),
+        ),
+        '#rows' => $rows,
+      );
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Implements hook_field_widget_info().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_widget_info/7.x
+ */
+function cvterm_action_field_widget_info() {
+  return array(
+    'cvterm_action_setup' => array(
+      'label' => t('CV term action'),
+      'description' => t('Manages CV term action seetings.'),
+      'field types' => array('cvterm_action'),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_form().
+ *
+ * @see https://api.drupal.org/api/drupal/modules!field!field.api.php/function/hook_field_widget_form/7.x
+ */
+function cvterm_action_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  drupal_add_js(drupal_get_path('module', 'cvterm_action') . '/js/cvterm_action.js');
+  drupal_add_css(drupal_get_path('module', 'cvterm_action') . '/css/cvterm_action.css');
+
+  // Get previous values.
+  $type = isset($items[$delta]['type']) ? $items[$delta]['type'] : 'view';
+  $action = isset($items[$delta]['action']) ? $items[$delta]['action'] : '';
+  $action_view = '';
+  $action_display_id = '';
+  if (('view' == $type) && preg_match('/^(\w+):(\w+)$/', $action, $match)) {
+    $action_view = $match[1];
+    $action_display_id = $match[2];
+  }
+  $title = isset($items[$delta]['title']) ? $items[$delta]['title'] : '';
+  $autorun = isset($items[$delta]['autorun']) ? $items[$delta]['autorun'] : FALSE;
+  $insertion = isset($items[$delta]['insert']) ? $items[$delta]['insert'] : '';
+  $target_options = array(
+    'term' => t('Term line'),
+    'region' => t('Theme region'),
+    'dom'  => t('DOM element selector'),
+  );
+  $target_type = 'term';
+  $target_id = '';
+  $target = isset($items[$delta]['target']) ? $items[$delta]['target'] : '';
+  if (preg_match('/(' . implode('|', array_keys($target_options)) . '):(.+)/', $target, $match)) {
+    $target_type = $match[1];
+    $target_id = $match[2];
+  }
+
+  $element['#delta'] = $delta;
+
+  switch ($instance['widget']['type']) {
+
+    case 'cvterm_action_setup':
+      $element += array(
+        '#type' => 'fieldset',
+        '#element_validate' => array('cvterm_action_element_validate'),
+        '#delta' => $delta,
+        '#attributes' => array('class' => array('cvterm-action-widget')),
+      );
+
+      $element['type'] = array(
+        '#type' => 'select',
+        '#title' => t('Type'),
+        '#options' => array(
+          'view' => t('View'),
+          'path' => t('Path'),
+          'url'  => t('External URL'),
+          'js'   => t('Javascript'),
+        ),
+        '#default_value' => $type,
+        '#description' => t('Sets the action type. "View" will use Drupal a view; "Path" will use a Drupal path; "External URL" will display an external URL link; "Javascript" will execute a javascript function.'),
+        '#required' => 1,
+        '#attributes' => array('class' => array('cvterm-action-type')),
+      );
+
+      $element['action'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Action'),
+        '#size' => 16,
+        '#default_value' => $action,
+        '#description' => t('Action to use according to the action type above. For "View", specify a "view_name:display_id"; for "Path", specify a Drupal path (no "/" prefix or suffix needed); for "External URL", specify a full external URL; for "Javascript", just specify a function name without parenthesis (only alpha-numeric characters).'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-action')),
+      );
+
+      $element['action_view_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('View name'),
+        '#size' => 16,
+        '#default_value' => $action_view,
+        '#description' => t('View machine name.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-view-name')),
+      );
+
+      $element['action_display_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Display ID'),
+        '#size' => 16,
+        '#default_value' => $action_display_id,
+        '#description' => t('View display identifier.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-display-id')),
+      );
+
+      $element['title'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Link label'),
+        '#size' => 16,
+        '#default_value' => $title,
+        '#description' => t('Label of the action link that will be displayed.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-title')),
+      );
+
+      $element['autorun'] = array(
+        '#type' => 'checkbox',
+        '#title' => t('Auto-run action'),
+        '#default_value' => $autorun,
+        '#description' => t('Auto-run action when the term is displayed. If not checked, the user will have to click on the action link to perform the action. This setting is ignored for "External URL" action type.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-autorun')),
+      );
+
+      $element['target'] = array(
+        '#type' => 'hidden',
+        '#default_value' => $target,
+        '#attributes' => array('class' => array('cvterm-action-target')),
+      );
+
+      $element['target_type'] = array(
+        '#type' => 'select',
+        '#title' => t('Target type'),
+        '#options' => $target_options,
+        '#default_value' => $target_type,
+        '#description' => t('Sets where to display the output. "Term line" will display the output on the term line in the CV browser; "Theme region" will display the output in the specified Drupal theme region; "DOM element selector" will display the output in the HTML element(s) identified by the specified selector (jQuery selector syntax).'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-target-type')),
+      );
+
+      $element['target_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Target identifier'),
+        '#size' => 16,
+        '#default_value' => $target_id,
+        '#description' => t('Sets where to display the output. For "Theme region", it must contain the region machine name; for "DOM element selector", it must contain a jQuery-like selector. This field is ignored for "Term line" target type.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-target-id')),
+      );
+
+      $element['insert'] = array(
+        '#type' => 'select',
+        '#title' => t('Insertion'),
+        '#options' => array(
+          'append'  => t('Append'),
+          'replace' => t('Replace'),
+          'class'   => t('Class'),
+        ),
+        '#default_value' => $insertion,
+        '#description' => t('Sets where to display the output. "Append" will add the output to the selected target while "Replace" will replace the content of that target. "Class" will consider the content as a CSS class name and will add it to the target element.'),
+        '#required' => 0,
+        '#attributes' => array('class' => array('cvterm-action-insert')),
+      );
+
+      break;
+  }
+
+  return $element;
+}
+
+/**
+ * Validate the individual fields.
+ *
+ * Check the action field to see if the item should be removed or not.
+ * Combine the target field values into a single target string.
+ */
+function cvterm_action_element_validate($element, &$form_state) {
+  drupal_add_js(drupal_get_path('module', 'cvterm_action') . '/js/cvterm_action.js');
+  drupal_add_css(drupal_get_path('module', 'cvterm_action') . '/css/cvterm_action.css');
+
+  $delta = $element['#delta'];
+  $field = $form_state['field'][$element['#field_name']][$element['#language']]['field'];
+  $field_name = $field['field_name'];
+  $values = $form_state['values'][$field_name][$element['#language']][$delta];
+
+  // Check if action field is empty, meaning we must remove the whole action.
+  if (empty($values['type'])
+      || (('view' == $values['type']) && empty($values['action_view_name']))
+      || (('view' != $values['type']) && empty($values['action']))) {
+    // If there is no action, we'll set the value empty and quit.
+    form_set_value($element, NULL, $form_state);
+    return;
+  }
+
+  // Check how to manage action fields (action, action_view_name and
+  // action_display_id).
+  $action_value = '';
+  switch ($values['type']) {
+    case 'view':
+      // Here, "action" field can be empty if action_view_name and
+      // action_display_id are not.
+      // However, if action_view_name and action_display_id are empty then
+      // "action" should contain a string of the form "view_name:display_id".
+      $view_name = $display_id = '';
+      if (!empty($values['action_view_name'])) {
+        // View/display are selected using their dedicated fields.
+        $view_name = trim($values['action_view_name']);
+        $display_id = empty($values['action_display_id']) ?
+          'default'
+          : trim($values['action_display_id']);
+        // Combine the 2 values into one.
+        $action_value = $view_name . ':' . $display_id;
+      }
+      elseif (!empty($values['action'])) {
+        $action_value = trim($values['action']);
+        // Make sure we have at least 1 alpha character.
+        if (!preg_match('/^([a-z0-9_]+):?([a-z0-9_]*)/', $action_value, $match)) {
+          form_error($element['action'], t("Invalid action value."));
+        }
+        $view_name = $match[1];
+        $display_id = empty($match[2]) ? 'default' : $match[2];
+      }
+      else {
+        form_error($element['action_view_name'], t("No view has been provided."));
+      }
+
+      // Check the selected view.
+      $view = views_get_view($view_name);
+      if ($view) {
+        if ($view->access($display_id)) {
+          $view->set_display($display_id);
+          if (!$view->display[$display_id]->handler->get_option('use_ajax')) {
+            form_error($element['action_display_id'], t("The specified view display is not set to use AJAX. Please enable AJAX for that view display and try again."));
+          }
+        }
+        else {
+          form_error($element['action_display_id'], t("The specified view display does not exist or is restricted."));
+        }
+      }
+      else {
+        form_error($element['action_view_name'], t("The specified view does not exist."));
+      }
+      break;
+
+    case 'path':
+      // Remove unwanted spaces.
+      $action_value = trim($values['action']);
+      // Remove eventual leading slashes.
+      $action_value = preg_replace('/^\/+/', '', $action_value);
+      // Remove trailing slashes.
+      $action_value = preg_replace('/[\/]+$/', '', $action_value);
+      // Check if the parameter uses placeholder.
+      if (FALSE !== strpos($action_value, '!')) {
+        // Placeholders were specified using the "!placeholder" replacement
+        // pattern: no path check.
+      }
+      elseif (FALSE === strpos($action_value, '/%/')) {
+        // No placeholder found, check if the path exists without parameter.
+        if (!drupal_valid_path($action_value)) {
+          // Invalid path, try to append the place holder.
+          $action_value .= '/%';
+          if (!drupal_valid_path($action_value, TRUE)) {
+            form_error($element['action'], t("Invalid Drupal path."));
+          }
+        }
+      }
+      else {
+        // A parameter place holder was specified, check path content.
+        if (!drupal_valid_path($action_value, TRUE)) {
+          form_error($element['action'], t("Invalid Drupal path."));
+        }
+      }
+      break;
+
+    case 'url':
+      // Remove unwanted spaces.
+      $action_value = trim($values['action']);
+      if (!valid_url($action_value, TRUE)
+          && !preg_match('/^\/\w+/', $action_value)) {
+        form_error($element['action'], t("Invalid URL."));
+      }
+      if (empty($values['title'])) {
+        form_error(
+          $element['title'],
+          t('A link label is required for "External URL" action type.')
+        );
+      }
+      break;
+
+    case 'js':
+      // Remove unwanted spaces.
+      $action_value = trim($values['action']);
+      if (!preg_match('/^(?!(?:do|if|in|for|let|new|try|var|case|else|enum|eval|false|null|this|true|void|with|break|catch|class|const|super|throw|while|yield|delete|export|import|public|return|static|switch|typeof|default|extends|finally|package|private|continue|debugger|function|arguments|interface|protected|implements|instanceof)$)[$A-Z\_a-z\xaa\xb5\xba\xc0-\xd6\xd8-\xf6\xf8\.]*$/', $action_value)) {
+        if (FALSE !== strpos($action_value, '{')) {
+          form_error($element['action'], t("Invalid javascript function name. Pieces of code are not allowed here."));
+        }
+        elseif (FALSE !== strpos($action_value, '(')) {
+          form_error($element['action'], t("Invalid javascript function name. Please do not include parentheses."));
+        }
+        else {
+          form_error($element['action'], t("Invalid javascript function name."));
+        }
+      }
+      break;
+
+    default:
+      // Here, "action" field must not be empty.
+      $action_value = trim($values['action']);
+      // Make sure we have at least 1 alpha character.
+      if (!preg_match('/[a-zA-Z]+/', $action_value)) {
+        form_error($element['action'], t("Invalid action value."));
+      }
+      break;
+  }
+  // Set action value.
+  $action = array(
+    '#parents' => array(
+      'cvterm_action',
+      $element['#language'],
+      $delta,
+      'action',
+    ),
+  );
+  form_set_value($action, $action_value, $form_state);
+
+  // Check link label was specified if autorun was not checked.
+  if (empty($values['autorun'])
+      && (!isset($values['title']) || !preg_match('/\S/', $values['title']))) {
+    form_error($element['title'], t("A link label must be specified if auto-run is checked."));
+  }
+
+  // Save target.
+  $target = array(
+    '#parents' => array(
+      'cvterm_action',
+      $element['#language'],
+      $delta,
+      'target',
+    ),
+  );
+  $target_value = 'term';
+  if (isset($values['target_type'])) {
+    $target_value =
+      $values['target_type']
+      . ':'
+      . (isset($values['target_id']) ? $values['target_id'] : '');
+  }
+  form_set_value($target, $target_value, $form_state);
+
+}
+
+/**
+ * Implements hook_field_widget_error().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_widget_error/7.x
+ */
+function cvterm_action_field_widget_error($element, $error, $form, &$form_state) {
+  switch ($error['error']) {
+    case 'cvterm_action_invalid':
+      form_error($element, $error['message']);
+      break;
+  }
+}

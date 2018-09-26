@@ -1,0 +1,265 @@
+<?php
+
+/**
+ * @file
+ * Installation of the Tripal CV Browser module.
+ */
+
+/**
+ * Implements hook_requirements().
+ *
+ * @ingroup tripal_cvb
+ */
+function tripal_cvb_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+  if ($phase == 'install') {
+    // Make sure chado is installed.
+    if (!$GLOBALS["chado_is_installed"]) {
+      $requirements['tripal_cvb'] = array(
+        'title' => 'tripal_cvb',
+        'value' => 'ERROR: Chado must be installed before this module can be enabled',
+        'severity' => REQUIREMENT_ERROR,
+      );
+    }
+
+    $jquery_version = variable_get('jquery_update_jquery_version', 0);
+    if (!version_compare($jquery_version, 1.7, '>=')) {
+      $requirements['tripal_cvb'] = array(
+        'title' => 'tripal_cvb',
+        'value' =>
+        'ERROR: enabled jQuery version must be >= 1.7. Check your '
+        . l(
+          $t('jQuery update module settings'),
+          'admin/config/development/jquery_update')
+        . '.',
+        'severity' => REQUIREMENT_WARNING,
+      );
+    }
+
+  }
+  return $requirements;
+}
+
+/**
+ * Implements hook_install().
+ *
+ * @ingroup tripal_cvb
+ */
+function tripal_cvb_install() {
+  $t = get_t();
+
+  // Initializes Tripal CV Browser settings.
+  $initial_tripal_cvb_settings = tripal_cvb_get_settings(TRUE);
+  tripal_cvb_set_settings($initial_tripal_cvb_settings);
+
+  // Make sure the field doesn't already exist.
+  if (!field_read_field('cvterm_action', array('include_inactive' => TRUE))) {
+    // Create the field.
+    $field = array(
+      'field_name' => 'cvterm_action',
+      'type' => 'cvterm_action',
+      'locked' => TRUE,
+      'settings' => array(),
+      'cardinality' => FIELD_CARDINALITY_UNLIMITED,
+      'deleted' => 0,
+      'module' => 'cvterm_action',
+      'translatable' => 0,
+      'entity_types' => array('tripal_cvb'),
+    );
+    field_create_field($field);
+  }
+  if (!field_read_instance('tripal_cvb', 'cvterm_action', 'tripal_cvb', array('include_inactive' => TRUE))) {
+    // Create the field instance.
+    $instance = array(
+      'field_name'  => 'cvterm_action',
+      'entity_type' => 'tripal_cvb',
+      'bundle'      => 'tripal_cvb',
+      'label'       => 'Actions',
+      'description' => 'Actions that can be performed on terms.',
+      'required'    => FALSE,
+      'default_value' => NULL,
+      'deleted'       => 0,
+      'display' => array(
+        'default' => array(
+          'label' => 'above',
+          'module' => 'cvterm_action',
+          'settings' => array(),
+          'type' => 'cvterm_action',
+          'weight' => 6,
+        ),
+        'teaser' => array(
+          'label' => 'above',
+          'settings' => array(),
+          'type' => 'hidden',
+          'weight' => 6,
+        ),
+      ),
+      'settings' => array(),
+      'widget' => array(
+        'module' => 'cvterm_action',
+        'settings' => array(),
+        'type' => 'cvterm_action',
+        'weight' => 6,
+      ),
+    );
+    field_create_instance($instance);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ *
+ * @ingroup tripal_cvb
+ */
+function tripal_cvb_uninstall() {
+  $t = get_t();
+
+  // Clear Tripal CV Browser settings.
+  variable_del('tripal_cvb_settings');
+
+  try {
+    field_attach_delete_bundle('tripal_cvb', 'tripal_cvb');
+    field_delete_field('cvterm_action');
+  }
+  catch (Exception $e) {
+    drupal_set_message(
+      $e->getMessage(),
+      'warning'
+    );
+  }
+}
+
+/**
+ * Implements hook_schema().
+ *
+ * Provides a list of tables to be created inside of the Drupal schema
+ * (the 'public' schema by default). It uses the Drupal Schema API
+ * array structure to define the table, its indexes and constraints.
+ *
+ * @see https://api.drupal.org/api/drupal/includes!database!schema.inc/group/schemaapi/7.x
+ *
+ * @ingroup tripal_cvb
+ */
+function tripal_cvb_schema() {
+
+  // Setup table used to record connections.
+  $schema['tripal_cvb'] = array(
+    'description' => 'Stores CV Browser settings.',
+    'fields' => array(
+      'cvbid' => array(
+        'description' => 'Primary Key',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'uid' => array(
+        'description' => "User's {users}.uid.",
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'CV Browser',
+        'description' => 'CV Browser name.',
+        'translatable' => TRUE,
+      ),
+      'machine_name' => array(
+        'type' => 'varchar',
+        // Machine name is used for block names and there is a block name length
+        // limit that forces us to limit the browser machine name to 16
+        // characters.
+        'length' => 16,
+        'not null' => TRUE,
+        'default' => 'cv-browser',
+        'description' => 'CV Browser machine name for internal uses.',
+        'translatable' => FALSE,
+      ),
+      'description' => array(
+        'description' => 'A brief description of this CV Browser.',
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'medium',
+        'translatable' => TRUE,
+      ),
+      'root_type' => array(
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => TRUE,
+        'default' => 'cvterm',
+        'description' => 'CV Browser root object type.',
+        'translatable' => FALSE,
+      ),
+      'root_ids' => array(
+        'type' => 'varchar',
+        'length' => 1023,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'CV Browser root object identifiers or names.',
+        'translatable' => FALSE,
+      ),
+      'show_cv' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+        'description' => 'Displays the root CV(s) on the browser.',
+      ),
+      'show_relationships' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 1,
+        'size' => 'tiny',
+        'description' => 'Displays the relationships on the browser.',
+      ),
+      // Exportable stuff.
+      'status' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        // Set the default to ENTITY_CUSTOM without using the constant as it is
+        // not safe to use it at this point.
+        'default' => 0x01,
+        'size' => 'tiny',
+        'description' => 'The exportable status of the entity.',
+      ),
+      'module' => array(
+        'description' => 'The name of the providing module if the entity has been defined in code.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+    ),
+    'foreign keys' => array(
+      'mcc_author' => array(
+        'table' => 'users',
+        'columns' => array('uid' => 'uid'),
+      ),
+    ),
+    'unique keys' => array(
+      'tripal_cvb_cvbid_uq1' => array('cvbid'),
+    ),
+    'primary key' => array('cvbid'),
+    'indexes' => array(
+      'uid' => array('uid'),
+    ),
+  );
+
+  return $schema;
+}
+
+/**
+ * Add show_relationships field to tripal_cvb table.
+ */
+function tripal_cvb_update_7100(&$sandbox) {
+  $spec = array(
+    'type' => 'int',
+    'not null' => TRUE,
+    'default' => 1,
+    'size' => 'tiny',
+    'description' => 'Displays the relationships on the browser.',
+  );
+  db_add_field('tripal_cvb', 'show_relationships', $spec);
+}

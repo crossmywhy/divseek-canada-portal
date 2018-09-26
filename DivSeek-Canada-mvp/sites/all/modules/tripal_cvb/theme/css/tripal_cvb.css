@@ -1,0 +1,91 @@
+/**
+ * @file
+ * Tripal CV browser CSS file.
+ */
+
+/**
+ * CV browser overview.
+ */
+
+.tripal-cvb-browser-list th,
+.tripal-cvb-browser-list td,
+.entity-tripal-cvb th,
+.entity-tripal-cvb td {
+  padding-right: 4ex;
+}
+
+.entity-tripal-cvb table {
+  margin-top: 0;
+}
+
+.field-name-cvterm-action > .field-label {
+  margin-top: 1.5em;
+}
+
+
+/**
+ * Action styles.
+ */
+.tripal-cvb-action {
+  color: #099;
+}
+
+.tripal-cvb-action.auto-run,
+.tripal-cvb-action.replaced {
+  color: inherit;
+}
+
+.tripal-cvb-action div.view,
+.tripal-cvb-action .view div.view-content,
+.tripal-cvb-action .view .view-content > div {
+  display: inline;
+}
+
+.ajax-progress .error {
+  margin: 2px 3px 0 0;
+  width: 16px;
+  height: 15px;
+  background-image: url(../../../../../../../misc/message-16-error.png);
+}
+
+/**
+ * CV browser styles.
+ */
+.tripal-cvb ul.tripal-cvb {
+  margin: 0;
+  padding: 0 0 0.3em 1.5em;
+  list-style-type: none;
+}
+
+ul.tripal-cvb li.tripal-cvb-collapsed {
+  list-style-image: url(../../../../../../../misc/menu-collapsed.png);
+  list-style-type: disc;
+}
+
+ul.tripal-cvb li.tripal-cvb-expanded {
+  list-style-image: url(../../../../../../../misc/menu-expanded.png);
+  list-style-type: circle;
+}
+
+ul.tripal-cvb li.tripal-cvb-leaf {
+  list-style-image: url(../../../../../../../misc/menu-leaf.png);
+  list-style-type: square;
+}
+
+.tripal-cvb-obsolete {
+  text-decoration: line-through;
+}
+
+.tripal-cvb-has-children:hover,
+.tripal-cvb-action:hover {
+  cursor: pointer;
+}
+
+.tripal-cvb-action.replaced:hover,
+.tripal-cvb-action.auto-run:hover {
+  cursor: default;
+}
+
+.tripal-cvb-leaf:hover {
+  cursor: default;
+}

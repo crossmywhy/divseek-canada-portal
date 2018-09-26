@@ -1,0 +1,24 @@
+/**
+ * @file
+ * CV term action CSS file.
+ */
+.cvterm-action-widget .form-item {
+  padding: 0.5em 0.5ex;
+}
+
+.cvterm-action-widget .description {
+  display: inline-block;
+  font-style: italic;
+}
+
+.cvterm-action-widget div[class$='-target-type'].form-item,
+.cvterm-action-widget div[class$='-target-id'].form-item {
+  display: inline-block;
+  margin-right: 3ex;
+}
+
+.cvterm-action-widget div[class$='-action-view-name'].form-item,
+.cvterm-action-widget div[class$='-action-display-id'].form-item {
+  display: none;
+  margin-right: 3ex;
+}

@@ -1,0 +1,20 @@
+name = Tripal CV term action field
+description = Profides a CV term action field for Tripal CV Browser.
+core = 7.x
+package = Tripal Extensions
+
+dependencies[] = field
+
+; Information added by Drupal.org packaging script on 2017-04-10
+version = "7.x-1.0-rc1"
+core = "7.x"
+project = "tripal_cvb"
+datestamp = "1491813548"
+
+
+; Information added by Drupal.org packaging script on 2017-05-17
+version = "7.x-1.0-rc2"
+core = "7.x"
+project = "tripal_cvb"
+datestamp = "1495024391"
+

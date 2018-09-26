@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * Install file for Tripal CV browser action field.
+ */
+
+/**
+ * Implements hook_field_schema().
+ *
+ * @see https://api.drupal.org/api/drupal/modules%21field%21field.api.php/function/hook_field_schema/7.x
+ */
+function cvterm_action_field_schema($field) {
+  $columns = array();
+  if ($field['type'] == 'cvterm_action') {
+    $columns = array(
+      'type' => array(
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => FALSE,
+      ),
+      'action' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'autorun' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'size' => 'tiny',
+        'default' => 0,
+      ),
+      'target' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ),
+      'insert' => array(
+        'type' => 'varchar',
+        'length' => 31,
+        'not null' => FALSE,
+      ),
+    );
+  }
+
+  return array(
+    'columns' => $columns,
+  );
+}

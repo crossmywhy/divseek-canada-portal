@@ -1,0 +1,24 @@
+name = Tripal CV Browser
+description = Display a browsable tree representing a given controlled vocabulary.
+core = 7.x
+package = Tripal Extensions
+configure = admin/tripal/extension/tripal_cvb
+
+dependencies[] = entity
+dependencies[] = jquery_update
+dependencies[] = tripal_core
+dependencies[] = tripal_db
+dependencies[] = tripal_cv
+dependencies[] = cvterm_action
+
+files[] = includes/tripal_cvb.entity.inc
+files[] = includes/tripal_cvb.controller.inc
+files[] = includes/tripal_cvb.ui_controller.inc
+files[] = tripal_cvb.test
+
+; Information added by Drupal.org packaging script on 2017-05-17
+version = "7.x-1.0-rc2"
+core = "7.x"
+project = "tripal_cvb"
+datestamp = "1495024391"
+

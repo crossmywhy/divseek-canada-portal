@@ -1,0 +1,164 @@
+<?php
+/**
+ * @file
+ * Non-Daemon Daemon API functionality including an administrative interface.
+ */
+
+require_once('includes/drushd.api.inc');
+
+/**
+ * Implements hook_libraries_info().
+ *
+ * Used to describe the PHP-Daemon library including which files to load.
+ */
+function drushd_libraries_info() {
+  $items = array();
+
+  $items['PHP-Daemon'] = array(
+    'name' => 'PHP Daemon',
+    'vendor_url' => 'https://github.com/shaneharter/PHP-Daemon',
+    'download_url' => 'https://github.com/shaneharter/PHP-Daemon',
+    // Unfortunately I had to hardcode the version here since there is no way
+    // to programatically determine the version of the PHP_Daemon. I can't even
+    // use regular expressions on the README :(.
+    'version' => '2.0',
+    'files' => array(
+      'php' => array(
+        'Core/Daemon.php',
+        'Core/IPlugin.php',
+        'Core/ITask.php',
+        'Core/IWorker.php',
+
+        'Core/Plugin/ProcessManager.php',
+
+        'Core/Lock/Lock.php',
+        'Core/Lock/File.php',
+
+        'Core/error_handlers.php',
+      ),
+    ),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_daemon_api_info().
+ *
+ * Registers our Daemon with the Drush Daemon API.
+ */
+function drushd_daemon_api_info() {
+  $daemon = array();
+
+  // This is the default Daemon & basically just tells you to create your
+  // own daemon.
+  $daemon['drush_daemon'] = array(
+    // The machine name of the daemon (same as key above).
+    'machine_name' => 'drush_daemon',
+    // A human-readable name for your daemon.
+    'name' => 'Drush Daemon',
+    // This module (ie: the module implementing the daemon).
+    'module' => 'drushd',
+    // The class extending DaemonApi_DrupalDaemon and implementing your
+    // daemon-specific functionality. This class should be in a [classname].inc
+    // file in your modules base directory.
+    'class' => 'DrushDaemon',
+    // OPTIONAL: Define this if your module doesn't follow the rule mentioned
+    // in the above comment. The name and path to the file containing the
+    // daemon class assuming your module folder as the root.
+    'class_file' => 'daemon_classes/DrushDaemon.inc',
+  );
+
+  // This is an example daemon which just sleeps for random amounts of time.
+  $daemon['example'] = array(
+    // The machine name of the daemon (same as key above).
+    'machine_name' => 'example',
+    // A human-readable name for your daemon.
+    'name' => 'Example Daemon',
+    // This module (ie: the module implementing the daemon).
+    'module' => 'drushd',
+    // The class extending DrupalDaemon and implementing your daemon-specific
+    // functionality. This class should be in a [classname].inc file in your
+    // modules base directory.
+    'class' => 'DrushDaemonExample',
+    // OPTIONAL: Define this if your module doesn't follow the rule mentioned
+    // in the above comment. The name and path to the file containing the
+    // daemon class assuming your module folder as the root.
+    'class_file' => 'daemon_classes/DrushDaemonExample.inc',
+  );
+
+  return $daemon;
+}
+
+/**
+ * Implements hook_cron().
+ *
+ * Notifies the admin user by email if the daemon is not running.
+ */
+function drushd_cron() {
+
+  // Defaults to sending one email every 24 hrs.
+  $default_interval = 60 * 60 * 24;
+
+  // Get a list of daemons.
+  $daemons = module_invoke_all('daemon_api_info');
+
+  // Next determine whether to notify or not for each daemon.
+  // Note: drushd_notify_admin_when_daemon_down() will only notify the admin if the
+  // daemon was run at least once. This is to ensure you don't get multiple emails that
+  // the example daemon is dead when it never lived.
+  foreach ($daemons as $info) {
+    $daemon_machine_name = $info['machine_name'];
+    $next_notification = 'drushd_next_notification_' . $daemon_machine_name;
+
+    // Allow the interval to be set per daemon.
+    // Furthermore, if the interval is set to FALSE then the administrator will
+    // never be emailed.
+    $interval_var = 'drushd_email_inteval_' . $daemon_machine_name;
+    $interval = variable_get($interval_var, $default_interval);
+
+    // We usually don't want to act every time cron runs (which could be every
+    // minute) so keep a time for the next run in a variable.
+    if (time() >= variable_get($next_notification, 0) AND ($interval !== FALSE)) {
+
+      // Notify the admin user if the daemon has perished.
+      $notified = drushd_notify_admin_when_daemon_down($daemon_machine_name);
+
+      // If we notified them then ensure we don't email for another 24 hrs.
+      if ($notified) {
+        variable_set($next_notification, time() + $interval);
+      }
+      // If the daemon is running then set the next notification to now to ensure that
+      // as soon as the deamon dies again the admin user is notified.
+      elseif (drushd_is_daemon_running($daemon_machine_name)) {
+        variable_set($next_notification, time());
+      }
+      // Otherwise, wait until the next cron when we will poke the daemon again.
+      else {}
+    }
+    // If 24hrs has not elapsed since the last time we contacted the admin,
+    // wait until the next cron run to poke the daemon again.
+    else {}
+  }
+}
+
+/**
+ * Implements hook_mail().
+ * Used for the the drupal mail system.
+ */
+function drushd_mail($key, &$message, $params) {
+
+  $headers = array(
+    'MIME-Version' => '1.0',
+    'Content-Type' => 'text/plain; charset=UTF-8;',
+    'Content-Transfer-Encoding' => '8Bit',
+    'X-Mailer' => 'Drupal'
+  );
+
+  foreach ($headers as $key => $value) {
+    $message['headers'][$key] = $value;
+  }
+
+  $message['subject'] = $params['subject'];
+  $message['body'] = $params['body'];
+}
