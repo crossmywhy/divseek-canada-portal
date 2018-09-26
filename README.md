@@ -9,3 +9,7 @@ The first iteration of the plaform is funded under a [Genome Canada Project](htt
 # Initial Design
 
 The platform is based on a customized deployment of the [Tripal](https://tripal.info/) web application, interacting with other open source bioinformatics tools such as the [Galaxy](https://galaxyproject.org/).  The project is hosted on [Compute Canada](https://www.computecanada.ca/) cloud and high performance computing infrastructure. 
+
+# Documentation
+
+Some technical notes about the portal system will be compiled on the [Divseek Portal Wiki](https://github.com/DivSeek-Canada/divseek-canada-portal/wiki).
