@@ -1,0 +1,28 @@
+version: '3.1'
+services:
+  portal:
+    # The 'portal' image needs to be pre-built for now
+    image: divseek-canada-portal
+    environment:
+    # Make sure that you sent your chosen local PostgresQL password here!
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-D!v$eekC@n@d@}
+    ports:
+    - "8077:8080"
+    depends_on:
+    - "database"
+    networks:
+    - default
+  database:
+    image: "postgres:${POSTGRES_VERSION}"
+    restart: always
+    environment:
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-D!v$eekC@n@d@}
+    #volumes:
+    # NOTE: if docker-compose is run under 'sudo' then $HOME will be 'root'
+    #- $HOME/postgres/data:/data
+    #- $HOME/postgres/logs:/logs
+    networks:
+    - default
+networks:
+  default:
+    driver: bridge

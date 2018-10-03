@@ -1,0 +1,3 @@
+[submodule "docker-tripal"]
+	path = docker-tripal
+	url = https://github.com/DivSeek-Canada/docker-tripal.git
