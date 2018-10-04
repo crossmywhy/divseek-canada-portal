@@ -4,7 +4,7 @@ The [DivSeek Canada](http://www.divseekcanada.ca)  **Portal** is a web-based pla
 
 # Genome Canada Pilot Project
 
-The first iteration of the plaform is funded under a [Genome Canada Project](https://www.genomecanada.ca/en/divseek-canada-harnessing-genomics-accelerate-crop-improvement-canada) with co-funding from other partners.
+The first iteration of the platform is funded under a [Genome Canada Project](https://www.genomecanada.ca/en/divseek-canada-harnessing-genomics-accelerate-crop-improvement-canada) with co-funding from other partners.
 
 # Documentation
 
