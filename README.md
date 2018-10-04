@@ -9,3 +9,24 @@ The first iteration of the platform is funded under a [Genome Canada Project](ht
 # Documentation
 
 Some technical notes about the portal system will be compiled on the [Divseek Portal Wiki](https://github.com/DivSeek-Canada/divseek-canada-portal/wiki).
+
+# Working on the Project
+
+This project resides in [this Github project repository](https://github.com/DivSeek-Canada/divseek-canada-portal).
+Note that the project contains an embedded git submodule, which is code from the
+[docker-tripal project v3.x branch](https://github.com/erasche/docker-tripal/tree/v3.x).
+
+Thus, in addition to git cloning the project, i.e.
+
+    git clone https://github.com/DivSeek-Canada/divseek-canada-portal 
+    
+one needs to initialize the submodule, i.e.
+
+    cd divseek-canada-portal
+    git submodule init
+    
+in later iterations, after every pull from the remote repo, one should update the submodule, i.e.
+
+    git submodule update
+
+ 

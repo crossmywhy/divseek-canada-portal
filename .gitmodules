@@ -1,0 +1,4 @@
+[submodule "docker-tripal"]
+	path = docker-tripal
+	url = https://github.com/erasche/docker-tripal.git
+	branch = v3.x
