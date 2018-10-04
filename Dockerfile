@@ -27,6 +27,7 @@
 ##########################################################################################################################
 
 FROM php:7.2-apache
+MAINTAINER Richard Bruskiewich <richard@starinformatics.com>
 
 # Install packages and PHP-extensions
 #
