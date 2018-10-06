@@ -1,0 +1,38 @@
+# This is DivSeek Canada configuration to build and run a custom Tripal instance with Docker-Compose.
+
+version: '2'
+services:
+
+    web:
+      # Builds a new image locally to replace the standard Docker image from erasche (for now)
+      # image: quay.io/erasche/tripal:v3.x
+      build: docker-tripal/.
+      links:
+        - db:postgres
+        - elasticsearch:elasticsearch
+      volumes:
+        - /var/www/html/sites
+        - /var/www/private
+      environment:
+        UPLOAD_LIMIT: 20M
+        MEMORY_LIMIT: 128M
+        BASE_URL: "http://localhost:3000/tripal"
+        BASE_URL_PROTO: "http://"
+        DB_NAME: 'postgres'
+      ports:
+        - "3000:80"
+
+    db:
+      image: erasche/chado:1.31-jenkins97-pg9.5
+      environment:
+        - POSTGRES_PASSWORD=postgres
+          # The default chado image would try to install the schema on first run,
+          # we just want the tools to be available.
+        - INSTALL_CHADO_SCHEMA=0
+        - INSTALL_YEAST_DATA=0
+        - PGDATA=/var/lib/postgresql/data/
+      volumes:
+        - /var/lib/postgresql/data/
+
+    elasticsearch:
+      image: elasticsearch
